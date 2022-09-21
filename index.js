@@ -60,7 +60,7 @@ class WebpackWatchedGlobEntries {
                 }
 
                 // Get the globbedFiles
-                let files = WebpackWatchedGlobEntries.getFiles(globString, globOptions, pluginOptions.basename_as_entry_name);
+                let files = WebpackWatchedGlobEntries.getFiles(globString, globOptions, pluginOptions.nameCallback);
 
                 // Set the globbed files
                 globbedFiles = Object.assign(files, globbedFiles);
@@ -71,6 +71,14 @@ class WebpackWatchedGlobEntries {
         };
     }
 
+    static defaultNaming (base, file) {
+         return path
+          .relative(base, file)
+          .replace(path.extname(file), '')
+          .split(path.sep)
+          .join('/');
+    }
+
     /**
      * Create webpack file entry object
      * @param globString
@@ -78,22 +86,23 @@ class WebpackWatchedGlobEntries {
      * @param basename_as_entry_name
      * @returns {Object}
      */
-    static getFiles(globString, globOptions, basename_as_entry_name) {
+    static getFiles(globString, globOptions, nameCallback) {
 
         const files = {};
-
         let base = globParent(globString, {});
+
+        const resolvedNameCallback = typeof nameCallback === 'function'
+          ? nameCallback
+          : WebpackWatchedGlobEntries.defaultNaming
 
         glob.sync(globString, globOptions).forEach(function(file) {
             // Format the entryName
-            let entryName = path
-            .relative(base, file)
-            .replace(path.extname(file), '')
-            .split(path.sep)
-            .join('/');
+            let entryName
 
-            if (basename_as_entry_name) {
-                entryName = path.basename(entryName);
+            if (typeof nameCallback === 'function') {
+                entryName = nameCallback(base, file)
+            } else {
+
             }
 
             // Add the entry to the files obj
